@@ -188,6 +188,7 @@ if __name__ == '__main__':
     """
     example for fcc Si
     """
+    from vasp_io import readCONTCAR
     # lattice = [5.43, 5.43, 5.43,
     #            90 * np.pi/180, 90 * np.pi/180, 90 * np.pi/180]
     Lattice = np.array([[0.5, 0.5, 0],
@@ -195,8 +196,10 @@ if __name__ == '__main__':
                         [0.5, 0, 0.5]]) * 5.43
     Atoms = [['Siv', np.array([0, 0, 0])],
              ['Siv', np.array([0.25, 0.25, 0.25])]]
-    Wavelength = XRD.get_wavelength('CuKa1')
-    # get_xrd(Lattice, Atoms, Wavelength)
-    xrd_si = XRD(Lattice, Atoms, Wavelength)
+
+    lat_const, lattice_vecs, atoms = readCONTCAR('POSCAR_Si')
+    lattice = np.array(lattice_vecs) * lat_const
+    wavelength = XRD.get_wavelength('CuKa1')
+    xrd_si = XRD(lattice, atoms, wavelength)
     xrd_si.plot()
 
