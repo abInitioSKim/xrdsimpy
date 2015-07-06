@@ -4,8 +4,9 @@ X-ray powder diffraction pattern simulation program
 Author: Sunghyun Kim(kimsunghyun@kaist.ac.kr)
 
 Reference:
-https://chemistry.osu.edu/~woodward/ch754/lect2003/xrd_peakpositions.pdf
+https://chemistry.osu.edu/~woodward/ch754/lect2003/xrd_peakintensities.pdf
 http://kk-sinha.blogspot.kr/2014/03/calculation-of-xrd-pattern-of-h-lufeo3.html
+http://www.gsc.dicp.ac.cn/down/jx/2011/2011.5.23/2-Diffraction-A.pdf
 """
 import numpy as np
 from numpy.linalg import norm
@@ -14,10 +15,9 @@ import matplotlib.pyplot as plt
 import os
 
 def sum_intensity(x_list, y_list, tolerance=0.00001):
-    """
-    Multiplicity treatment
-    similar to histogram
-    if same x in x_list, merge them
+    """ Multiplicity treatment
+        similar to histogram
+        if same x in x_list, merge them
     """
     new_x_list = []
     new_y_list = []
@@ -31,35 +31,42 @@ def sum_intensity(x_list, y_list, tolerance=0.00001):
     return new_x_list, new_y_list
 
 def normalize(y_list, max_value=100.):
-    """
-    maximum y set to be 100
+    """ maximum y set to be 100
     """
     y_list = np.array(y_list)
     y_list = y_list / max(y_list) * max_value
     return y_list
 
+
 class XRD(object):
-    '''
-    xrd pattern generate
-    '''
+    """ xrd pattern generate
+    """
     def __init__(self, lattice, atoms, wavelength):
+        """ constructor
+            Args:
+                lattice: latice matrix
+                atoms: list of atoms
+                wavelength: float
+        """
         self.lattice = lattice
         self.atoms = atoms
-        self.wavelength = wavelength
+        if type(wavelength) is str:
+            self.wavelength = XRD.get_wavelength(wavelength)
+        else:
+            self.wavelength = wavelength
         self.twotheta_list = None
         self.inten_profile = None
         self.intensity_list = None
 
     def get_atom_form(self, element, file_name='form.txt'):
-        """
-        get atomic form factor function parameters
-        data from
-        http://lamp.tu-graz.ac.at/~hadley/ss1/crystaldiffraction/
-        atomicformfactors/formfactors.php
-        Arguments:
-        element:   The string indicating element (eg. 'C')
-                   It should be one of the values in the first column form_file
-        file_file: file_name for the atomic form factor data
+        """ get atomic form factor function parameters
+            data from
+            http://lamp.tu-graz.ac.at/~hadley/ss1/crystaldiffraction/
+            atomicformfactors/formfactors.php
+            Args:
+                element: The string indicating element (eg. 'C')
+                         It should be one of the values in the first column form_file
+                file_file: file_name for the atomic form factor data
         """
         with open(os.path.dirname(os.path.realpath(__file__)) + '/' +
                   file_name, 'r') as form_file:
@@ -72,8 +79,7 @@ class XRD(object):
 
     @staticmethod
     def get_wavelength(anode='CuKa1'):
-        """
-        return common x-ray wavelength
+        """ return common x-ray wavelength
         """
         xray_wavelength = {
             'CuKa1': 1.5405981,
@@ -85,8 +91,7 @@ class XRD(object):
         return xray_wavelength[anode]
 
     def get_kvec_list(self, k_1, k_2, k_3, max_index=None):
-        """
-        return possible h, k, l
+        """ return possible h, k, l
         """
         from itertools import product
         wavelength = self.wavelength
@@ -108,8 +113,7 @@ class XRD(object):
         return np.array(kvec_list)
 
     def get_xrd(self):
-        """
-        calculate xrd pattern of structure
+        """ calculate xrd pattern of structure
         """
         # lattice = structure.lattice.get_matrix()
         elements = set([atom[0] for atom in self.atoms])
@@ -160,15 +164,14 @@ class XRD(object):
                 inten_profile.append((h, k, l, twotheta, inten))
 
             else:
-                print wavelength * y
+                print self.wavelength * y
 
         self.inten_profile = inten_profile
         self.twotheta_list = twotheta_list
         self.intensity_list = intensity_list
 
     def plot(self):
-        """
-        Plot intensity vs two theta
+        """ Plot intensity vs two theta
         """
         if not self.twotheta_list:
             self.get_xrd()
@@ -184,22 +187,24 @@ class XRD(object):
         plt.ylabel("Intensity")
         plt.show()
 
+
 if __name__ == '__main__':
-    """
-    example for fcc Si
+    """ example for fcc Si
     """
     from vasp_io import readCONTCAR
     # lattice = [5.43, 5.43, 5.43,
     #            90 * np.pi/180, 90 * np.pi/180, 90 * np.pi/180]
-    Lattice = np.array([[0.5, 0.5, 0],
-                        [0, 0.5, 0.5],
-                        [0.5, 0, 0.5]]) * 5.43
-    Atoms = [['Siv', np.array([0, 0, 0])],
+    lat_const = 5.465
+    lattice_vecs = np.array([[0.5, 0.5, 0],
+                             [0, 0.5, 0.5],
+                             [0.5, 0, 0.5]])
+    atoms = [['Siv', np.array([0, 0, 0])],
              ['Siv', np.array([0.25, 0.25, 0.25])]]
 
     lat_const, lattice_vecs, atoms = readCONTCAR('POSCAR_Si')
+
     lattice = np.array(lattice_vecs) * lat_const
-    wavelength = XRD.get_wavelength('CuKa1')
-    xrd_si = XRD(lattice, atoms, wavelength)
+    # wavelength = XRD.get_wavelength('CuKa1')
+    xrd_si = XRD(lattice, atoms, 'CuKa1')
     xrd_si.plot()
 
