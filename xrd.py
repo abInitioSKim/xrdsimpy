@@ -14,30 +14,6 @@ from numpy import dot, cross, cos, sin, arcsin
 import matplotlib.pyplot as plt
 import os
 
-def sum_intensity(x_list, y_list, tolerance=0.00001):
-    """ Multiplicity treatment
-        similar to histogram
-        if same x in x_list, merge them
-    """
-    new_x_list = []
-    new_y_list = []
-    for i, x_value in enumerate(x_list):
-        index = np.where(abs(new_x_list - x_value) <= tolerance)[0]
-        if len(index) > 0:
-            new_y_list[index] += y_list[i]
-        else:
-            new_x_list.append(x_list[i])
-            new_y_list.append(y_list[i])
-    return new_x_list, new_y_list
-
-def normalize(y_list, max_value=100.):
-    """ maximum y set to be 100
-    """
-    y_list = np.array(y_list)
-    y_list = y_list / max(y_list) * max_value
-    return y_list
-
-
 class XRD(object):
     """ xrd pattern generate
     """
@@ -49,6 +25,7 @@ class XRD(object):
                 wavelength: float
         """
         self.lattice = lattice
+        self.rec_lattice = np.linalg.inv(lattice).T
         self.atoms = atoms
         if type(wavelength) is str:
             self.wavelength = XRD.get_wavelength(wavelength)
@@ -146,8 +123,11 @@ class XRD(object):
                              if atom[0] == element]:
                     pos = atom[1]
                     plane = np.array([h, k, l])
+                    phase = np.dot(np.dot(pos, self.lattice),
+                                   np.dot(self.rec_lattice, plane))
+                    # print phase, dot(pos, plane)
                     s_factor = atom_form *\
-                               np.exp(-2 * np.pi * dot(pos, plane) * 1j)
+                               np.exp(-2 * np.pi * phase * 1j)
                     s_factor_list.append(s_factor)
 
             if -1 <= self.wavelength * y <= 1:
@@ -173,6 +153,29 @@ class XRD(object):
     def plot(self):
         """ Plot intensity vs two theta
         """
+        def sum_intensity(x_list, y_list, tolerance=1E-5):
+            """ Multiplicity treatment
+                similar to histogram
+                if same x in x_list, merge them
+            """
+            new_x_list = []
+            new_y_list = []
+            for i, x_value in enumerate(x_list):
+                index = np.where(abs(new_x_list - x_value) <= tolerance)[0]
+                if len(index) > 0:
+                    new_y_list[index] += y_list[i]
+                else:
+                    new_x_list.append(x_list[i])
+                    new_y_list.append(y_list[i])
+            return new_x_list, new_y_list
+
+        def normalize(y_list, max_value=100.):
+            """ maximum y set to be 100
+            """
+            y_list = np.array(y_list)
+            y_list = y_list / max(y_list) * max_value
+            return y_list
+
         if not self.twotheta_list:
             self.get_xrd()
         x_list, y_list = self.twotheta_list, self.intensity_list
