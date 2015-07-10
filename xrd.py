@@ -25,7 +25,7 @@ class XRD(object):
                 wavelength: float
         """
         self.lattice = lattice
-        self.rec_lattice = np.linalg.inv(lattice).T
+        self.rec_lattice = np.linalg.inv(lattice).T * np.pi * 2
         self.atoms = atoms
         if type(wavelength) is str:
             self.wavelength = XRD.get_wavelength(wavelength)
@@ -96,18 +96,19 @@ class XRD(object):
         elements = set([atom[0] for atom in self.atoms])
         a_vec, b_vec, c_vec = self.lattice
 
-        volume = dot(a_vec, cross(b_vec, c_vec))
+        # volume = dot(a_vec, cross(b_vec, c_vec))
 
-        k_1 = 2 * np.pi * cross(b_vec, c_vec) / volume
-        k_2 = 2 * np.pi * cross(c_vec, a_vec) / volume
-        k_3 = 2 * np.pi * cross(a_vec, b_vec) / volume
-
+        # k_1 = 2 * np.pi * cross(b_vec, c_vec) / volume
+        # k_2 = 2 * np.pi * cross(c_vec, a_vec) / volume
+        # k_3 = 2 * np.pi * cross(a_vec, b_vec) / volume
+        k_1, k_2, k_3 = self.rec_lattice 
         inten_profile = []
         intensity_list = []
         twotheta_list = []
 
         for (h, k, l) in self.get_kvec_list(k_1, k_2, k_3):
-            q = h * k_1 + k * k_2 + l * k_3
+            # q = h * k_1 + k * k_2 + l * k_3
+            q = np.dot([h, k, l], self.rec_lattice)
             y = norm(q) / 4. / np.pi
             s_factor_list = []
             for element in elements:
@@ -142,7 +143,6 @@ class XRD(object):
                 twotheta = 2 * 180 / np.pi * theta
                 twotheta_list.append(twotheta)
                 inten_profile.append((h, k, l, twotheta, inten))
-
             else:
                 print self.wavelength * y
 
@@ -184,7 +184,7 @@ class XRD(object):
         # print X
         # print Y
         for i in range(len(x_list)):
-            plt.plot([x_list[i], x_list[i]], [0, y_list[i]], 'k-')
+            plt.plot([x_list[i], x_list[i]], [0, y_list[i]], '-', c='#5ab4ac')
         plt.xlim((0, 180))
         plt.xlabel('2$\\theta$')
         plt.ylabel("Intensity")
@@ -197,17 +197,20 @@ if __name__ == '__main__':
     from vasp_io import readCONTCAR
     # lattice = [5.43, 5.43, 5.43,
     #            90 * np.pi/180, 90 * np.pi/180, 90 * np.pi/180]
-    lat_const = 5.465
-    lattice_vecs = np.array([[0.5, 0.5, 0],
-                             [0, 0.5, 0.5],
-                             [0.5, 0, 0.5]])
-    atoms = [['Siv', np.array([0, 0, 0])],
-             ['Siv', np.array([0.25, 0.25, 0.25])]]
+    # lat_const = 5.465
+    # lattice_vecs = np.array([[0.5, 0.5, 0],
+    #                          [0, 0.5, 0.5],
+    #                          [0.5, 0, 0.5]])
+    # atoms = [['Siv', np.array([0, 0, 0])],
+    #          ['Siv', np.array([0.25, 0.25, 0.25])]]
 
-    lat_const, lattice_vecs, atoms = readCONTCAR('POSCAR_Si')
+    # lat_const, lattice_vecs, atoms = readCONTCAR('POSCAR_Si')
+    # lat_const, lattice_vecs, atoms = readCONTCAR('POSCAR_MoTe2')
+    lat_const, lattice_vecs, atoms = readCONTCAR('../CONTCAR_03_1')
 
     lattice = np.array(lattice_vecs) * lat_const
     # wavelength = XRD.get_wavelength('CuKa1')
     xrd_si = XRD(lattice, atoms, 'CuKa1')
+    xrd_si.get_xrd()
     xrd_si.plot()
 
