@@ -13,6 +13,9 @@ from numpy.linalg import norm
 from numpy import dot, cross, cos, sin, arcsin
 import matplotlib.pyplot as plt
 import os
+import argparse
+from vasp_io import readCONTCAR
+
 
 class XRD(object):
     """ xrd pattern generate
@@ -194,7 +197,18 @@ class XRD(object):
 if __name__ == '__main__':
     """ example for fcc Si
     """
-    from vasp_io import readCONTCAR
+
+    parser = argparse.ArgumentParser(description='Simulate X-Ray Powder Diffraction')
+    parser.add_argument('-f', '--file', default='./POSCAR',
+                       help='POSCAR(CONTCAR) file path')
+    parser.add_argument('-w', '--wavelength', default='CuKa1',
+                       help='wavelength of X-Ray, {"CuKa1", "CuKa2", "CuKb1", "WLa1", "WLa2", or float value}')
+
+    args = parser.parse_args()
+
+    poscar_file = args.file
+    wavelength = args.wavelength 
+
     # lattice = [5.43, 5.43, 5.43,
     #            90 * np.pi/180, 90 * np.pi/180, 90 * np.pi/180]
     # lat_const = 5.465
@@ -204,13 +218,11 @@ if __name__ == '__main__':
     # atoms = [['Siv', np.array([0, 0, 0])],
     #          ['Siv', np.array([0.25, 0.25, 0.25])]]
 
-    # lat_const, lattice_vecs, atoms = readCONTCAR('POSCAR_Si')
-    # lat_const, lattice_vecs, atoms = readCONTCAR('POSCAR_MoTe2')
-    lat_const, lattice_vecs, atoms = readCONTCAR('../CONTCAR_03_1')
+    lat_const, lattice_vecs, atoms = readCONTCAR(poscar_file)
 
     lattice = np.array(lattice_vecs) * lat_const
-    # wavelength = XRD.get_wavelength('CuKa1')
-    xrd_si = XRD(lattice, atoms, 'CuKa1')
+
+    xrd_si = XRD(lattice, atoms, wavelength)
     xrd_si.get_xrd()
     xrd_si.plot()
 
