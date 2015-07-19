@@ -27,13 +27,20 @@ class XRD(object):
                 atoms: list of atoms
                 wavelength: float
         """
+        def isfloat(value):
+          try:
+            float(value)
+            return True
+          except ValueError:
+            return False
         self.lattice = lattice
         self.rec_lattice = np.linalg.inv(lattice).T * np.pi * 2
         self.atoms = atoms
-        if type(wavelength) is str:
+
+        if not isfloat(wavelength):
             self.wavelength = XRD.get_wavelength(wavelength)
         else:
-            self.wavelength = wavelength
+            self.wavelength = float(wavelength)
         self.twotheta_list = None
         self.inten_profile = None
         self.intensity_list = None
@@ -73,6 +80,7 @@ class XRD(object):
     def get_kvec_list(self, k_1, k_2, k_3, max_index=None):
         """ return possible h, k, l
         """
+        MAX_INDEX = 5
         from itertools import product
         wavelength = self.wavelength
         kvec_list = []
@@ -82,6 +90,7 @@ class XRD(object):
             k = int(np.ceil(1. / wavelength / norm(k_2) * 4. * np.pi))
             l = int(np.ceil(1. / wavelength / norm(k_3) * 4. * np.pi))
             max_index = max(h, k, l)
+            max_index = min(MAX_INDEX, max_index    )
 
         for (h, k, l) in product(xrange(-max_index, max_index + 1), repeat=3):
             q = h * k_1 + k * k_2 + l * k_3
@@ -166,7 +175,7 @@ class XRD(object):
             for i, x_value in enumerate(x_list):
                 index = np.where(abs(new_x_list - x_value) <= tolerance)[0]
                 if len(index) > 0:
-                    new_y_list[index] += y_list[i]
+                    new_y_list[index[0]] += y_list[i]
                 else:
                     new_x_list.append(x_list[i])
                     new_y_list.append(y_list[i])
@@ -181,6 +190,7 @@ class XRD(object):
 
         if not self.twotheta_list:
             self.get_xrd()
+
         x_list, y_list = self.twotheta_list, self.intensity_list
         x_list, y_list = sum_intensity(x_list, y_list)
         y_list = normalize(y_list)
@@ -216,7 +226,6 @@ if __name__ == '__main__':
     wavelength = args.wavelength 
     angles = args.angle
     output = args.output
-
     # lattice = [5.43, 5.43, 5.43,
     #            90 * np.pi/180, 90 * np.pi/180, 90 * np.pi/180]
     # lat_const = 5.465
