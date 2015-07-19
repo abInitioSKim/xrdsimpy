@@ -153,7 +153,7 @@ class XRD(object):
         self.twotheta_list = twotheta_list
         self.intensity_list = intensity_list
 
-    def plot(self):
+    def plot(self, angles):
         """ Plot intensity vs two theta
         """
         def sum_intensity(x_list, y_list, tolerance=1E-5):
@@ -188,7 +188,7 @@ class XRD(object):
         # print Y
         for i in range(len(x_list)):
             plt.plot([x_list[i], x_list[i]], [0, y_list[i]], '-', c='#5ab4ac')
-        plt.xlim((0, 180))
+        plt.xlim(angles)
         plt.xlabel('2$\\theta$')
         plt.ylabel("Intensity")
         plt.show()
@@ -203,12 +203,15 @@ if __name__ == '__main__':
                        help='POSCAR(CONTCAR) file path')
     parser.add_argument('-w', '--wavelength', default='CuKa1',
                        help='wavelength of X-Ray, {"CuKa1", "CuKa2", "CuKb1", "WLa1", "WLa2", or float value}')
+    parser.add_argument('-a', '--angle', nargs=2, type=float, default=[0, 180],
+                       help='2theta range')
 
     args = parser.parse_args()
 
     poscar_file = args.file
     wavelength = args.wavelength 
-
+    angles = args.angle
+    print angles
     # lattice = [5.43, 5.43, 5.43,
     #            90 * np.pi/180, 90 * np.pi/180, 90 * np.pi/180]
     # lat_const = 5.465
@@ -224,5 +227,5 @@ if __name__ == '__main__':
 
     xrd_si = XRD(lattice, atoms, wavelength)
     xrd_si.get_xrd()
-    xrd_si.plot()
+    xrd_si.plot(angles)
 
