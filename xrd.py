@@ -90,7 +90,7 @@ class XRD(object):
             k = int(np.ceil(1. / wavelength / norm(k_2) * 4. * np.pi))
             l = int(np.ceil(1. / wavelength / norm(k_3) * 4. * np.pi))
             max_index = max(h, k, l)
-            max_index = min(MAX_INDEX, max_index    )
+            max_index = min(MAX_INDEX, max_index)
 
         for (h, k, l) in product(xrange(-max_index, max_index + 1), repeat=3):
             q = h * k_1 + k * k_2 + l * k_3
@@ -108,11 +108,6 @@ class XRD(object):
         elements = set([atom[0] for atom in self.atoms])
         a_vec, b_vec, c_vec = self.lattice
 
-        # volume = dot(a_vec, cross(b_vec, c_vec))
-
-        # k_1 = 2 * np.pi * cross(b_vec, c_vec) / volume
-        # k_2 = 2 * np.pi * cross(c_vec, a_vec) / volume
-        # k_3 = 2 * np.pi * cross(a_vec, b_vec) / volume
         k_1, k_2, k_3 = self.rec_lattice 
         inten_profile = []
         intensity_list = []
@@ -124,7 +119,6 @@ class XRD(object):
             y = norm(q) / 4. / np.pi
             s_factor_list = []
             for element in elements:
-            # for element in structure.get_elements():
                 a_form_parm = self.get_atom_form(element)
                 atom_form = a_form_parm[0] * np.exp(-a_form_parm[1] * y ** 2) +\
                             a_form_parm[2] * np.exp(-a_form_parm[3] * y ** 2) +\
@@ -136,11 +130,9 @@ class XRD(object):
                              if atom[0] == element]:
                     pos = atom[1]
                     plane = np.array([h, k, l])
-                    phase = np.dot(np.dot(pos, self.lattice),
-                                   np.dot(self.rec_lattice, plane))
-                    # print phase, dot(pos, plane)
+
                     s_factor = atom_form *\
-                               np.exp(-2 * np.pi * phase * 1j)
+                               np.exp(2j * np.pi * dot(pos, plane))
                     s_factor_list.append(s_factor)
 
             if -1 <= self.wavelength * y <= 1:
@@ -148,7 +140,7 @@ class XRD(object):
                 if theta == np.pi / 2. or theta == 0:
                     continue
                 lp_factor = (1. + cos(theta * 2) ** 2) /\
-                            (8 * sin(theta) ** 2 * cos(theta))
+                            (8. * sin(theta) ** 2 * cos(theta))
                 inten = norm(sum(s_factor_list)) ** 2 * lp_factor
                 intensity_list.append(inten)
 
@@ -194,8 +186,7 @@ class XRD(object):
         x_list, y_list = self.twotheta_list, self.intensity_list
         x_list, y_list = sum_intensity(x_list, y_list)
         y_list = normalize(y_list)
-        # print X
-        # print Y
+        
         for i in range(len(x_list)):
             plt.plot([x_list[i], x_list[i]], [0, y_list[i]], '-', c='#5ab4ac')
         plt.xlim(angles)
@@ -226,14 +217,6 @@ if __name__ == '__main__':
     wavelength = args.wavelength 
     angles = args.angle
     output = args.output
-    # lattice = [5.43, 5.43, 5.43,
-    #            90 * np.pi/180, 90 * np.pi/180, 90 * np.pi/180]
-    # lat_const = 5.465
-    # lattice_vecs = np.array([[0.5, 0.5, 0],
-    #                          [0, 0.5, 0.5],
-    #                          [0.5, 0, 0.5]])
-    # atoms = [['Siv', np.array([0, 0, 0])],
-    #          ['Siv', np.array([0.25, 0.25, 0.25])]]
 
     lat_const, lattice_vecs, atoms = readCONTCAR(poscar_file)
 
